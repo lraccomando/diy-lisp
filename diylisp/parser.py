@@ -10,11 +10,59 @@ the workshop. It's job is to convert strings into data structures that the evalu
 understand. 
 """
 
+STRING_TYPE_MAP = {
+    '#t': True, 
+    '#f': False
+}
+
 def parse(source):
     """Parse string representation of one *single* expression
     into the corresponding Abstract Syntax Tree."""
+    source = remove_comments(source)
+    first, rest = first_expression(source)
+    if rest: 
+        raise LispError('Expected EOF')
 
-    raise NotImplementedError("DIY")
+    parts = [convert_types(exp) for exp in split_exps(first)]
+
+    if len(parts) == 1: 
+        return parts[0]
+    return parts
+
+
+def convert_types(source): 
+    # Convert Ints 
+    try: 
+        return int(source)
+    except ValueError:
+        pass 
+    
+    # Convert True / False
+    try: 
+        return STRING_TYPE_MAP[source]
+    except KeyError: 
+        pass
+
+    # Convert Lists 
+    if source[0] == '(': 
+        return convert_list(source)
+
+    # Convert Quotes 
+    if source[0] == '\'' and source[-1] != '\'': 
+        return convert_quote(source)
+    
+    # Else is a string
+    return source
+
+def convert_list(source): 
+    last_paren = find_matching_paren(source, 0)
+    cleaned = source[1:last_paren]
+    return [convert_types(exp) for exp in split_exps(cleaned)]
+
+def convert_quote(source): 
+    expanded = "quote %s" % source[1:]
+    return [convert_types(exp) for exp in split_exps(expanded)]
+
 
 ##
 ## Below are a few useful utility functions. These should come in handy when 
